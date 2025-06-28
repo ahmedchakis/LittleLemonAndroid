@@ -23,21 +23,26 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var firstName by remember {
+    var firstName by remember(user.firstName) {
         mutableStateOf(user.firstName)
     }
+
+    var lastName by remember(user.lastName) {
+        mutableStateOf(user.lastName)
+    }
+
+    var email by remember(user.email) {
+        mutableStateOf(user.email)
+    }
+
     var firstNameError by remember {
         mutableStateOf("")
     }
-    var lastName by remember {
-        mutableStateOf(user.lastName)
-    }
+
     var lastNameError by remember {
         mutableStateOf("")
     }
-    var email by remember {
-        mutableStateOf(user.email)
-    }
+
     var emailError by remember {
         mutableStateOf("")
     }
@@ -88,7 +93,8 @@ fun ProfileScreen(
 
 
             Button(onClick = onNavigateBack) {
-                Text("Go Back")
+                Text("Go Back"),
+
             }
             Spacer(modifier = Modifier.height(8.dp))
             Button(onClick = onLogout) {

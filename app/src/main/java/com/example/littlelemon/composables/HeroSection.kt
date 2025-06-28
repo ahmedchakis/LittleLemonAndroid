@@ -22,6 +22,8 @@ import com.example.littlelemon.R // Make sure this points to your R file
 @Composable
 fun HeroSection(  searchText: String,
                   onSearchTextChange: (String) -> Unit) {
+
+
     // State for the search text field
 
     Column(

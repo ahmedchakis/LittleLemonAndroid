@@ -6,7 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
@@ -44,11 +46,15 @@ class MainActivity : ComponentActivity() {
             LittleLemonTheme {
                 val navController = rememberNavController()
                 val prefs = getSharedPreferences("little lemon", MODE_PRIVATE)
-                val initialUserProfile = User(
-                    firstName = prefs.getString(SharedPreferencesKeys.FIRST_NAME, "") ?: "",
-                    lastName = prefs.getString(SharedPreferencesKeys.LAST_NAME, "") ?: "",
-                    email = prefs.getString(SharedPreferencesKeys.EMAIL, "") ?: ""
-                )
+                var userProfile by remember {
+                    mutableStateOf(
+                        User(
+                            firstName = prefs.getString(SharedPreferencesKeys.FIRST_NAME, "") ?: "",
+                            lastName = prefs.getString(SharedPreferencesKeys.LAST_NAME, "") ?: "",
+                            email = prefs.getString(SharedPreferencesKeys.EMAIL, "") ?: ""
+                        )
+                    )
+                }
                 val loggedIn = prefs.getBoolean("loggedIn", false)
 
                 val start = if(loggedIn) Home.route else Onboarding.route
@@ -73,19 +79,20 @@ class MainActivity : ComponentActivity() {
 
 
                 Navigation( navController = navController,
-                    initialUserProfile = initialUserProfile,
+                    initialUserProfile = userProfile,
                     menuItems = databaseMenuItems,
                     categories = uniqueCategories,
 
 
 
-                onLoginSuccess = { userProfile ->
+                onLoginSuccess = { newUser ->
                         prefs.edit().apply {
                             putBoolean(SharedPreferencesKeys.LOGGED_IN, true)
-                            putString(SharedPreferencesKeys.FIRST_NAME, userProfile.firstName)
-                            putString(SharedPreferencesKeys.LAST_NAME, userProfile.lastName)
-                            putString(SharedPreferencesKeys.EMAIL, userProfile.email)
+                            putString(SharedPreferencesKeys.FIRST_NAME, newUser.firstName)
+                            putString(SharedPreferencesKeys.LAST_NAME, newUser.lastName)
+                            putString(SharedPreferencesKeys.EMAIL, newUser.email)
                         }.apply()
+                    userProfile = newUser
                     },
                     onLogout = {
                                prefs.edit().clear().apply()

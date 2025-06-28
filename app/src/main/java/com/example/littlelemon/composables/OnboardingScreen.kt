@@ -114,13 +114,25 @@ fun OnboardingScreen(onNavigateToHome: (User) -> Unit) {
         {
             Text("Personal Information", color = colorResource(id = R.color.primary), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.padding(all= 5.dp))
-            CustomTextField(label = "First Name", onChangeValue = { firstName = it }, value = firstName, isError = isError, errorMessage = firstNameError)
+            CustomTextField(label = "First Name", onChangeValue = {
+                firstName = it
+                isError = false
+                firstNameError = ""
+                                                                  }, value = firstName, isError = isError, errorMessage = firstNameError)
 
             Spacer(modifier = Modifier.padding(all= 5.dp))
-            CustomTextField(label = "Last Name", onChangeValue = { lastName = it }, value = lastName,isError = isError, errorMessage = lastNameError)
+            CustomTextField(label = "Last Name", onChangeValue = {
+                lastName = it
+                isError = false
+                lastNameError = ""
+                                                                 }, value = lastName,isError = isError, errorMessage = lastNameError)
 
             Spacer(modifier = Modifier.padding(all= 5.dp))
-            CustomTextField(label = "Email", onChangeValue = { email = it }, value = email,isError = isError, errorMessage = emailError)
+            CustomTextField(label = "Email", onChangeValue = {
+                email = it
+                isError = false
+                emailError = ""
+                                                             }, value = email,isError = isError, errorMessage = emailError)
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = "Register",
@@ -183,7 +195,7 @@ fun CustomTextField(label:String,onChangeValue:(String) -> Unit,value:String, is
             .fillMaxWidth(),
             label = {Text(label)}
         )
-        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Light, color = Color.Red)
+        Text(errorMessage, fontSize = 10.sp, fontWeight = FontWeight.Light, color = Color.Red)
     }
 }
 
