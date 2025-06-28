@@ -1,3 +1,5 @@
+package com.example.littlelemon.composables
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +11,11 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,36 +27,53 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.room.Room
+import com.example.littlelemon.AppDatabase
+import com.example.littlelemon.MenuItemRoom
 import com.example.littlelemon.R // Make sure this points to your R file
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType
+import io.ktor.serialization.kotlinx.json.json
 
 // Assuming R.drawable.logo is your app's logo
 // You might also have R.drawable.user_avatar for a specific user image
 
 @Composable
-fun HomeScreen(onNavigateToProfile: () -> Unit) {
+fun HomeScreen(onNavigateToProfile: () -> Unit, menuItems: List<MenuItemRoom>, categories: List<String>,) {
+
+    var selectedCategories = remember { mutableStateListOf   <String> () }
+
+    var searchText by remember { mutableStateOf("") }
+
+    val filteredMenuItems = menuItems.filter { menuItem ->
+        val matchesCategory = selectedCategories.isEmpty() || selectedCategories.contains(menuItem.category)
+        val matchesSearch = searchText.isBlank() || menuItem.title.contains(searchText, ignoreCase = true)
+        matchesCategory && matchesSearch
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Header Section
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(85.dp)
-                .padding(horizontal = 16.dp), // Padding for the whole header
-            verticalAlignment = Alignment.CenterVertically // Ensures items are vertically centered in the row
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Use a Box to manage the positioning of the logo and avatar within the Row
             Box(
-                modifier = Modifier.fillMaxWidth() // This Box takes up all available width in the Row
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Logo - Centered in the Box
                 Image(
                     painter = painterResource(id = R.drawable.logo),
                     contentDescription = "App Logo",
                     modifier = Modifier
-                        .size(200.dp) // Adjusted size for better header fit
-                        .align(Alignment.Center) // Aligns this Image to the center of its parent Box
+                        .size(200.dp)
+                        .align(Alignment.Center)
                 )
 
-                // Circular Avatar - Aligned to the right-center of the Box
+
                 CircularAvatar(
                     onNavigateToProfile = onNavigateToProfile,
                     modifier = Modifier.align(Alignment.CenterEnd),
@@ -57,17 +81,32 @@ fun HomeScreen(onNavigateToProfile: () -> Unit) {
                 )
             }
         }
+        HeroSection(searchText = searchText, onSearchTextChange = {
+            searchText = it
+        })
 
-        // Rest of your screen content goes here
+        CategoryChips(
+            categories = categories,
+            selectedCategories = selectedCategories,
+            onCategorySelected = { newCategory ->
+                if(selectedCategories.contains((newCategory))){
+                    selectedCategories.remove(newCategory)
+                } else{
+                    selectedCategories.add(newCategory)
+                }
+
+            }
+        )
+
         Box(
             modifier = Modifier
-                .weight(1f) // This makes the content box fill the remaining vertical space
+                .weight(1f)
                 .fillMaxWidth()
-                .background(Color.LightGray) // Just for visualization
                 .padding(16.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Your main content goes here!")
+
+            MenuItemsList(items = filteredMenuItems)
         }
     }
 }
@@ -84,32 +123,32 @@ fun HomeScreen(onNavigateToProfile: () -> Unit) {
 @Composable
 fun CircularAvatar(
     modifier: Modifier = Modifier,
-    size: Dp = 48.dp, // Default size for the avatar
-    avatarPainter: Painter? = null, // You can pass your user's image painter here
+    size: Dp = 48.dp,
+    avatarPainter: Painter? = null,
     onNavigateToProfile: () -> Unit
 ) {
     Box(
         modifier = modifier
-            .size(size) // Set the overall size of the avatar container
-            .clip(CircleShape) // Clip the content to a circle
-            .background(colorResource(id = R.color.secondary)) // Background color for the avatar (or fallback for default icon)
-            .clickable(onClick = onNavigateToProfile), // Make it clickable
-        contentAlignment = Alignment.Center // Center content (image/icon) within the circle
+            .size(size)
+            .clip(CircleShape)
+            .background(colorResource(id = R.color.secondary))
+            .clickable(onClick = onNavigateToProfile),
+        contentAlignment = Alignment.Center
     ) {
         if (avatarPainter != null) {
             Image(
                 painter = avatarPainter,
                 contentDescription = "User Avatar",
-                contentScale = ContentScale.Crop, // Crop to fill the circle nicely
+                contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            // Fallback: Default Person icon if no specific avatar image is provided
+
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = "Default Avatar",
-                tint = Color.White, // Color of the icon
-                modifier = Modifier.size(size * 0.7f) // Make icon slightly smaller than the circle
+                tint = Color.White,
+                modifier = Modifier.size(size * 0.7f)
             )
         }
     }
@@ -120,7 +159,7 @@ fun CircularAvatar(
 @Composable
 fun HomeScreenPreview() {
     MaterialTheme { // Wrap your preview in your app's theme
-        HomeScreen(onNavigateToProfile = {})
+        HomeScreen(onNavigateToProfile = {}, menuItems = emptyList(), categories = emptyList())
     }
 }
 
@@ -133,7 +172,7 @@ fun CircularAvatarPreview() {
             Spacer(modifier = Modifier.height(10.dp))
             // Example with a placeholder image (replace with your actual user avatar drawable)
             // Assuming you have a drawable named 'user_avatar'
-            // CircularAvatar(avatarPainter = painterResource(id = R.drawable.user_avatar), onNavigateToProfile = {})
+            // com.example.littlelemon.composables.CircularAvatar(avatarPainter = painterResource(id = R.drawable.user_avatar), onNavigateToProfile = {})
         }
     }
 }

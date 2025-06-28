@@ -3,16 +3,39 @@ package com.example.littlelemon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
 
 import com.example.littlelemon.composables.Navigation
 import com.example.littlelemon.composables.SharedPreferencesKeys
 import com.example.littlelemon.composables.User
 import com.example.littlelemon.ui.theme.LittleLemonTheme
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.http.ContentType
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private val httpClient = HttpClient(Android) {
+        install(ContentNegotiation) {
+            json(contentType = ContentType("text", "plain"))
+        }
+    }
 
+    private val database by lazy {
+        Room.databaseBuilder(applicationContext, AppDatabase::class.java, "database").build()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,8 +54,32 @@ class MainActivity : ComponentActivity() {
                 val start = if(loggedIn) Home.route else Onboarding.route
 
 
-                Navigation(navController = navController,initialUserProfile = initialUserProfile,
-                    onLoginSuccess = { userProfile ->
+                val databaseMenuItems by database.menuItemDao().getAll().observeAsState(emptyList())
+
+                val uniqueCategories by remember(databaseMenuItems) {
+                    derivedStateOf {
+                        databaseMenuItems.map { it.category }.toSet().toList()
+                    }
+                }
+
+
+
+
+
+
+
+
+
+
+
+                Navigation( navController = navController,
+                    initialUserProfile = initialUserProfile,
+                    menuItems = databaseMenuItems,
+                    categories = uniqueCategories,
+
+
+
+                onLoginSuccess = { userProfile ->
                         prefs.edit().apply {
                             putBoolean(SharedPreferencesKeys.LOGGED_IN, true)
                             putString(SharedPreferencesKeys.FIRST_NAME, userProfile.firstName)
@@ -43,14 +90,33 @@ class MainActivity : ComponentActivity() {
                     onLogout = {
                                prefs.edit().clear().apply()
                     },
-                    startDestination = start
+                    startDestination = start,
+
 
                     )
 
             }
         }
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (database.menuItemDao().isEmpty()) {
+                val menuItems = fetchMenu()
+                saveMenuToDatabase(menuItems)
+            }
+        }
 
 
+
+    }
+    private suspend fun fetchMenu(): List<MenuItemNetwork> {
+        val response =
+            httpClient.get("https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/menu.json")
+        val menuNetwork = response.body<MenuNetwork>()
+        return menuNetwork.menu
+    }
+
+    private fun saveMenuToDatabase(menuItemsNetwork: List<MenuItemNetwork>) {
+        val menuItemsRoom = menuItemsNetwork.map { it.toMenuItemRoom() }
+        database.menuItemDao().insertAll(*menuItemsRoom.toTypedArray())
     }
 
 

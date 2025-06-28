@@ -13,11 +13,15 @@ data class MenuNetwork(
 data class MenuItemNetwork(
     val id: Int,
     val title: String,
-    var price: Double
+    var price: Double,
+    val description: String,
+    val image: String,
+    val category: String,
 ) {
     fun toMenuItemRoom() = MenuItemRoom(
-        id    = id,
-        title = title,
-        price = price
+        id,
+        title,
+        price,
+        description, image, category
     )
 }

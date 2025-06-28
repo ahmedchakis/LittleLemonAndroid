@@ -1,17 +1,20 @@
 package com.example.littlelemon.composables
 
-import HomeScreen
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.littlelemon.Home
+import com.example.littlelemon.MenuItemRoom
 import com.example.littlelemon.Onboarding
 import com.example.littlelemon.Profile
 
 @Composable
 fun Navigation(
+    menuItems: List<MenuItemRoom>,
+    categories: List<String>,
     navController: NavHostController,
     startDestination: String,
     initialUserProfile: User,
@@ -22,6 +25,7 @@ fun Navigation(
     NavHost(navController = navController, startDestination = startDestination, modifier = modifier) {
         composable(Onboarding.route) {
             OnboardingScreen(
+
                 onNavigateToHome = { userProfile ->
                     onLoginSuccess(userProfile)
                     navController.navigate(Home.route) {
@@ -32,6 +36,8 @@ fun Navigation(
         }
         composable(Home.route) {
             HomeScreen(
+                menuItems = menuItems,
+                categories = categories,
                 onNavigateToProfile = { navController.navigate(Profile.route) }
             )
         }
